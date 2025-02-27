@@ -8,6 +8,7 @@ string specialities[] = {
     "System Analysis", "Data Science", "Artificial Intelligence", "Information Technology",
     "Robotics", "Cloud Computing"
 };
+
 struct Diploma {
     string specialty;
     int year;
@@ -28,187 +29,203 @@ struct Diploma {
             << "\nUsefulness: " << usefulness << "\n";
     }
 };
+
 struct DynamicArray {
     Diploma* diplomas;
     int capacity;
     int current_size;
+    int frontIndex;
 
-
-    DynamicArray() : capacity(10), current_size(0) {
+    DynamicArray() : capacity(2), current_size(0), frontIndex(0) {
         diplomas = new Diploma[capacity];
     }
+
     void resize() {
-        int new_capacity = capacity * 2;
-        Diploma* new_data = new Diploma[new_capacity];
-
+        int newCapacity = capacity * 2;
+        Diploma* newData = new Diploma[newCapacity];
         for (int i = 0; i < current_size; i++) {
-            new_data[i] = diplomas[i];
+            newData[i] = diplomas[(frontIndex + i) % capacity];
         }
-
         delete[] diplomas;
-        diplomas = new_data;
-        capacity = new_capacity;
+        diplomas = newData;
+        capacity = newCapacity;
+        frontIndex = 0;
     }
 
-    void push_back(Diploma diploma) {
-        if (current_size >= capacity) {
-            resize();
-        }
-        diplomas[current_size++] = diploma;
-    }
-
-    Diploma pop_back() {
-        if (current_size == 0) {
-            cout << "Error. array is empty" << endl;
-            return Diploma();
-        }
-        return diplomas[--current_size];
-    }
-
-    void push_front( Diploma diploma) {
-        if (current_size >= capacity) {
-            resize();
-        }
-        for (int i = current_size; i > 0; i--) {
-            diplomas[i] = diplomas[i - 1];
-        }
-        diplomas[0] = diploma;
+    void push_back(Diploma value) {
+        if (current_size == capacity) resize();
+        diplomas[(frontIndex + current_size) % capacity] = value;
         current_size++;
     }
 
-    Diploma pop_front() {
-        if (current_size == 0) {
-            cout << "Error. array is empty" << endl;
-            return Diploma();
-        }
-        Diploma removed = diplomas[0];
-        for (int i = 0; i < current_size - 1; i++) {
-            diplomas[i] = diplomas[i + 1];
-        }
+    void push_front(Diploma value) {
+        if (current_size == capacity) resize();
+        frontIndex = (frontIndex - 1 + capacity) % capacity;
+        diplomas[frontIndex] = value;
+        current_size++;
+    }
+
+    void pop_front() {
+        if (current_size == 0) return;
+        frontIndex = (frontIndex + 1) % capacity;
         current_size--;
-        return removed;
+    }
+
+    void pop_back() {
+        if (current_size == 0) return;
+        current_size--;
     }
 
     Diploma get(int index) {
         if (index < 0 || index >= current_size) {
-            cout << "Error. index out of range" << endl;
+            cout << "Error. Index out of range :(" << endl;
             return Diploma();
         }
-        return diplomas[index];
+        return diplomas[(frontIndex + index) % capacity];
     }
 
-    int size()  {
-        return current_size;
-    }
+    int size() { return current_size; }
 
-    void print()  {
-        if (current_size == 0) {
-            cout << "Empty\n";
-            return;
-        }
-        for (int i = 0; i < current_size; i++) {
-            cout << "#" << i << endl;
-            diplomas[i].Print();
-            cout << "-----------------------\n";
-        }
-    }
-
-    void clear() {
-        delete[] diplomas;
-        capacity = 10;
-        current_size = 0;
-        diplomas = new Diploma[capacity];
-    }
-
-    ~DynamicArray() {
-        delete[] diplomas;
-    }
+    ~DynamicArray() { delete[] diplomas; }
 };
 
 struct Node {
     Diploma value;
-
     Node* next;
     Node* prior;
-
-    Node(Diploma value, Node* next, Node* prior)
-    {
-        this->value = value;
-        this->next = next;
-        this->prior = prior;
-    }
+    Node(Diploma value) : value(value), next(nullptr), prior(nullptr) {}
 };
 
 struct LinkedList {
-    int size;
     Node* head;
     Node* tail;
-
-    LinkedList() : size(0), head(nullptr), tail(nullptr) {}
-
-    void push_front(Diploma value) {
-        Node* newNode = new Node(value, head, nullptr);
-        if (head) head->prior = newNode;
-        head = newNode;
-        if (!tail) tail = newNode;
-        size++;
-    }
+    int size;
+    LinkedList() : head(nullptr), tail(nullptr), size(0) {}
 
     void push_back(Diploma value) {
-        Node* newNode = new Node(value, nullptr, tail);
-        if (tail) tail->next = newNode;
-        tail = newNode;
-        if (!head) head = newNode;
+        Node* newNode = new Node(value);
+        if (!tail) head = tail = newNode;
+        else {
+            tail->next = newNode;
+            newNode->prior = tail;
+            tail = newNode;
+        }
         size++;
     }
 
-    void print() {
-        Node* value = head;
-        while (value) {
-            value->value.Print();
-            value = value->next;
+    void push_front(Diploma value) {
+        Node* newNode = new Node(value);
+        if (!head) head = tail = newNode;
+        else {
+            newNode->next = head;
+            head->prior = newNode;
+            head = newNode;
         }
-    }
-
-    Diploma get(int n) {
-        if (n < 0 || n >= size) {
-            cout << "Error: Index out of range" << endl;
-            return Diploma("None", 0, 0);
-        }
-        Node* value = (size / 2 > n) ? head : tail;
-        for (int i = 0; i < n; i++) {
-            value = (size / 2 > n) ? value->next : value->prior;
-        }
-        return value->value;
+        size++;
     }
 
     void pop_front() {
         if (!head) return;
-        Node* removeValue = head;
+        Node* temp = head;
         head = head->next;
         if (head) head->prior = nullptr;
         else tail = nullptr;
-        delete removeValue;
+        delete temp;
         size--;
     }
 
     void pop_back() {
         if (!tail) return;
-        Node* removeValue = tail;
+        Node* temp = tail;
         tail = tail->prior;
         if (tail) tail->next = nullptr;
         else head = nullptr;
-        delete removeValue;
+        delete temp;
         size--;
+    }
+    void insert(Diploma value, int index) {
+        if (index < 0 || index > size) {
+            cout << "Error. Index out of range :(" << endl;
+            return;
+        }
+
+        Node* newNode = new Node(value);
+
+        if (index == 0) { 
+            push_front(value);
+        }
+        else if (index == size) {  
+            push_back(value);
+        }
+        else {
+            Node* current = head;
+            for (int i = 0; i < index; i++) {
+                current = current->next;
+            }
+
+            newNode->next = current;
+            newNode->prior = current->prior;
+            if (current->prior) {
+                current->prior->next = newNode;
+            }
+            current->prior = newNode;
+
+            size++;
+        }
+
+    }
+    void remove(int index) {
+        if (index < 0 || index >= size) {
+            cout << "Error. Index out of range :(" << endl;
+            return;
+        }
+
+        if (index == 0) {
+            pop_front();
+        }
+        else if (index == size - 1) {  
+            pop_back();
+        }
+        else {
+            Node* current = head;
+            for (int i = 0; i < index; i++) {
+                current = current->next;
+            }
+
+            current->prior->next = current->next;
+            if (current->next) {
+                current->next->prior = current->prior;
+            }
+
+            delete current;
+            size--;
+        }
+
+    }
+    Diploma get(int index) {
+        if (index < 0 || index >= size) {
+            cout << "Error. Index out of range :(" << endl;
+            return Diploma();
+        }
+
+        Node* node = (index < size / 2) ? head : tail;
+        int steps = (index < size / 2) ? index : size - 1 - index;
+
+        for (int i = 0; i < steps; i++) {
+            node = (index < size / 2) ? node->next : node->prior;
+        }
+
+        return node->value;
+    }
+
+    int sizeList() {
+        return size;
     }
 
     void clear() {
         while (head) {
             pop_front();
         }
-    }
-    int sizeList() {
-        return size;
     }
     ~LinkedList() {
         clear();
@@ -218,7 +235,7 @@ struct LinkedList {
 void reverse(LinkedList& list) {
     Node* prior = nullptr;
     Node* next = list.head;
-    list.tail = list.head; 
+    list.tail = list.head;
 
     while (next) {
         Node* tmp = next->next;
@@ -230,62 +247,123 @@ void reverse(LinkedList& list) {
 
     list.head = prior;
 }
+int hasCycle(Node* head) {
+    if (head == nullptr) return 0;  
 
+    Node* slow = head;
+    Node* fast = head;
+
+    while (fast != nullptr && fast->next != nullptr) {
+        slow = slow->next;         
+        fast = fast->next->next;    
+
+        if (slow == fast) {
+            return 1;  
+        }
+    }
+
+    return 0; 
+}
 
 int main() {
     srand(time(0));
-    DynamicArray array;
     LinkedList list;
+    double sumaList = 0;
     clock_t ListStartTime = clock();
   
     for (int i = 0; i < 50000; i++) {
         list.push_back(Diploma());
     }
-
+    clock_t ListEndTime = clock();
+    double ListSeconds = double(ListEndTime - ListStartTime) / CLOCKS_PER_SEC;
+    cout << "List push_back(50000): " << ListSeconds << "sec" << " Size = " << list.sizeList() << endl;
+    sumaList += ListSeconds;
+    ListStartTime = clock();
     for (int i = 0; i < 10000; i++) {
         list.push_front(Diploma());
     }
+    ListEndTime = clock();
+    ListSeconds = double(ListEndTime - ListStartTime) / CLOCKS_PER_SEC;
+    cout << "List push_front(10000): " << ListSeconds << "sec" << " Size = " << list.sizeList() << endl;
+    sumaList += ListSeconds;
 
+    ListStartTime = clock();
     for (int i = 0; i < 20000; i++) {
         list.get(rand() % list.sizeList()).Print();
     }
+    ListEndTime = clock();
+    ListSeconds = double(ListEndTime - ListStartTime) / CLOCKS_PER_SEC;
+    cout << "List get(20000): " << ListSeconds << "sec" << " Size = " << list.sizeList() << endl;
+    sumaList += ListSeconds;
 
+    ListStartTime = clock();
     for (int i = 0; i < 5000; i++) {
         list.pop_front();
     }
+    ListEndTime = clock();
+    ListSeconds = double(ListEndTime - ListStartTime) / CLOCKS_PER_SEC;
+    cout << "List pop_front(5000): " << ListSeconds << "sec" << " Size = " << list.sizeList() << endl;
+    sumaList += ListSeconds;
 
+    ListStartTime = clock();
     for (int i = 0; i < 5000; i++) {
         list.pop_back();
     }
+    ListEndTime = clock();
+    ListSeconds = double(ListEndTime - ListStartTime) / CLOCKS_PER_SEC;
+    cout << "List pop_back(5000): " << ListSeconds << "sec" << " Size = " << list.sizeList() << endl;
+    sumaList += ListSeconds;
+    cout << "List Time: " << sumaList << " sec" << endl;
 
-    clock_t ListEndTime = clock();
-
+    //--------------------------------------------------------
+    cout << "--------------------------------------------------------" << endl;
+    DynamicArray array;
+    double sumaArray = 0;
     clock_t ArrayStartTime = clock();
     for (int i = 0; i < 50000; i++) {
         array.push_back(Diploma());
     }
+    clock_t ArrayEndTime = clock();
+    double ArraySeconds = double(ArrayEndTime - ArrayStartTime) / CLOCKS_PER_SEC;
 
+    cout << "Array push_back(50000): " << ArraySeconds << "sec"<<" Size = "<<array.size() << endl;
+    sumaArray += ArraySeconds;
+    ArrayStartTime = clock();
     for (int i = 0; i < 10000; i++) {
         array.push_front(Diploma());
     }
+    ArrayEndTime = clock();
+    ArraySeconds = double(ArrayEndTime - ArrayStartTime) / CLOCKS_PER_SEC;
+    cout << "Array push_front push_back(10000): " << ArraySeconds << "sec" << " Size = " << array.size() << endl;
+    sumaArray += ArraySeconds;
 
+    ArrayStartTime = clock();
     for (int i = 0; i < 20000; i++) {
         array.get(rand() % array.size()).Print();
     }
-
+    ArrayEndTime = clock();
+    ArraySeconds = double(ArrayEndTime - ArrayStartTime) / CLOCKS_PER_SEC;
+    cout << "Array push_front get(20000): " << ArraySeconds << "sec" << " Size = " << array.size() << endl;
+    sumaArray += ArraySeconds;
+    ArrayStartTime = clock();
     for (int i = 0; i < 5000; i++) {
         array.pop_front();
     }
-
+    ArrayEndTime = clock();
+    ArraySeconds = double(ArrayEndTime - ArrayStartTime) / CLOCKS_PER_SEC;
+    cout << "Array pop_front get(5000): " << ArraySeconds << "sec" << " Size = " << array.size() << endl;
+    sumaArray += ArraySeconds;
+    ArrayStartTime = clock();
     for (int i = 0; i < 5000; i++) {
         array.pop_back();
     }
-    clock_t ArrayEndTime = clock();
+    ArrayEndTime = clock();
+    ArraySeconds = double(ArrayEndTime - ArrayStartTime) / CLOCKS_PER_SEC;
+    cout << "Array pop_back get(5000): " << ArraySeconds << "sec" << " Size = " << array.size() << endl;
+    sumaArray += ArraySeconds;
 
-    double ListSeconds = double(ListEndTime - ListStartTime) / CLOCKS_PER_SEC;
-    double ArraySeconds = double(ArrayEndTime - ArrayStartTime) / CLOCKS_PER_SEC;
-    cout << "List Time: " << ListSeconds << " sec" << endl;
-    cout << "ArraySeconds Time: " << ArraySeconds << " sec" << endl;
+   
+    cout << "ArraySeconds Time: " << sumaArray << " sec" << endl;
 
     return 0;
 }
